@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">SyncMart</string>
+    <string name="app_logo">App Logo</string>
+    <string name="syncmart">SyncMart</string>
+    <string name="email">Enter your email</string>
+    <string name="password">Enter your password</string>
+    <string name="login">LOGIN</string>
+    <string name="register_prompt">New User? Register here</string>
+    <string name="enter_password">Enter password</string>
+    <string name="confirm_password">Confirm password</string>
+    <string name="register">Register</string>
+    <string name="enter_your_email">Enter your email</string>
+    <string name="enter_your_name">Enter your name</string>
+    <string name="register_background">Register Background</string>
+</resources>

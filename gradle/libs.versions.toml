@@ -1,0 +1,36 @@
+[versions]
+activityComposeVersion = "1.9.3"
+activityKtx = "1.11.0"
+agp = "8.9.1"
+coreSplashscreen = "1.0.1"
+firebaseBom = "33.9.0"
+kotlin = "2.0.0"
+coreKtx = "1.15.0"
+junit = "4.13.2"
+junitVersion = "1.2.1"
+espressoCore = "3.6.1"
+lifecycleCommon = "2.9.3"
+lifecycleRuntimeKtx = "2.8.7"
+activityCompose = "1.10.0"
+composeBom = "2024.04.01"
+firebaseAuth = "23.2.0"
+appcompat = "1.7.0"
+lifecycleRuntimeKtxVersion = "2.8.6"
+material = "1.12.0"
+activity = "1.10.0"
+constraintlayout = "2.2.0"
+navigationRuntimeAndroid = "2.9.0-alpha07"
+navigationRuntimeDesktop = "2.9.0-alpha07"
+navigationRuntimeKtx = "2.8.8"
+navigationCompose = "2.8.8"
+roomKtx = "2.6.1"
+firebaseFirestoreKtx = "25.1.2"
+composeCompiler = "1.5.14" # ✅ added
+
+[libraries]
+# ... keep your existing libraries
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" } # ✅ added

@@ -1,0 +1,55 @@
+# Built application files
+*.apk
+*.ap_
+*.aab
+
+# Files for the ART/Dalvik VM
+*.dex
+
+# Java class files
+*.class
+
+# Generated files
+bin/
+gen/
+build/
+out/
+
+# Gradle files
+.gradle/
+build/
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# Signing keys
+*.jks
+*.keystore
+
+# IntelliJ/Android Studio files
+*.iml
+.idea/
+*.iws
+*.ipr
+
+# Misc
+.DS_Store
+*.log
+captures/
+.externalNativeBuild/
+
+# Kotlin specific
+*.kotlin_module
+
+# Compose previews
+.build/
+
+# Jetpack Compose build caches
+caches/
+
+# Lint reports
+lint-report.xml
+lint-results.xml
+
+# Other
+.navigation/
