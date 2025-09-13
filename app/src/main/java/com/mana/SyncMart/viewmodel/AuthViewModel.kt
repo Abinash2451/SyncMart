@@ -25,6 +25,16 @@ class AuthViewModel(
     val isLoggedIn: Boolean
         get() = auth.currentUser != null
 
+    // Get current user ID
+    fun getCurrentUserId(): String? {
+        return auth.currentUser?.uid
+    }
+
+    // Get current user email
+    fun getCurrentUserEmail(): String? {
+        return auth.currentUser?.email
+    }
+
     // LOGIN
     fun login(email: String, password: String, onResult: (Boolean) -> Unit) {
         if (email.isBlank() || password.isBlank()) {

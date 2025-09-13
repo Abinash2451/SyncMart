@@ -24,7 +24,7 @@ class FriendsViewModel(
     private val _searchResult = MutableStateFlow<User?>(null)
     val searchResult: StateFlow<User?> = _searchResult
 
-    /** 🔹 Load friends list */
+    /** Load friends list */
     fun loadFriends() {
         _isLoading.value = true
         _errorMessage.value = null
@@ -41,7 +41,7 @@ class FriendsViewModel(
         )
     }
 
-    /** 🔹 Search for user by email */
+    /** Search for user by email */
     fun searchUser(email: String) {
         if (email.isBlank()) {
             _searchResult.value = null
@@ -65,7 +65,7 @@ class FriendsViewModel(
         )
     }
 
-    /** 🔹 Add friend by user ID */
+    /** Add friend by user ID */
     fun addFriend(friendId: String) {
         _isLoading.value = true
         _errorMessage.value = null
@@ -84,7 +84,7 @@ class FriendsViewModel(
         )
     }
 
-    /** 🔹 Remove friend */
+    /** Remove friend */
     fun removeFriend(friendId: String) {
         _isLoading.value = true
         _errorMessage.value = null
@@ -102,12 +102,12 @@ class FriendsViewModel(
         )
     }
 
-    /** 🔹 Clear error message */
+    /** Clear error message */
     fun clearError() {
         _errorMessage.value = null
     }
 
-    /** 🔹 Clear search result */
+    /** Clear search result */
     fun clearSearchResult() {
         _searchResult.value = null
     }

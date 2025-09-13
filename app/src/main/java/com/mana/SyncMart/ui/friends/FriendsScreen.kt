@@ -1,5 +1,4 @@
 package com.mana.SyncMart.ui.friends
-
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -27,9 +26,9 @@ fun FriendsScreen(
     val isLoading by friendsViewModel.isLoading.collectAsState()
     val errorMessage by friendsViewModel.errorMessage.collectAsState()
     val searchResult by friendsViewModel.searchResult.collectAsState()
-
     var searchEmail by remember { mutableStateOf("") }
     var showAddFriendDialog by remember { mutableStateOf(false) }
+    var isAddingFriend by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         friendsViewModel.loadFriends()
@@ -60,7 +59,6 @@ fun FriendsScreen(
             ) {
                 Text("View Shared Lists")
             }
-
             Spacer(modifier = Modifier.height(16.dp))
 
             // Loading indicator
@@ -143,7 +141,6 @@ fun FriendsScreen(
                                         color = MaterialTheme.colorScheme.outline
                                     )
                                 }
-
                                 IconButton(
                                     onClick = { friendsViewModel.removeFriend(friend.uid) }
                                 ) {
@@ -168,27 +165,57 @@ fun FriendsScreen(
                 showAddFriendDialog = false
                 friendsViewModel.clearSearchResult()
                 searchEmail = ""
+                isAddingFriend = false
             },
             title = { Text("Add Friend") },
             text = {
                 Column {
                     OutlinedTextField(
                         value = searchEmail,
-                        onValueChange = {
-                            searchEmail = it
-                            if (it.isNotBlank()) {
-                                friendsViewModel.searchUser(it)
+                        onValueChange = { newEmail ->
+                            val previousEmail = searchEmail
+                            searchEmail = newEmail
+
+                            // Clear search if email is blank
+                            if (newEmail.isBlank()) {
+                                friendsViewModel.clearSearchResult()
+                            }
+                            // Search if email has changed and is not blank
+                            else if (newEmail.trim() != previousEmail.trim() && newEmail.trim().isNotBlank()) {
+                                friendsViewModel.searchUser(newEmail.trim())
                             }
                         },
                         label = { Text("Friend's Email") },
                         trailingIcon = {
                             Icon(Icons.Default.Search, contentDescription = "Search")
                         },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isAddingFriend
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
 
+                    // Show loading indicator while searching
+                    if (isLoading && searchEmail.isNotBlank()) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Searching...", style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+
+                    // Show search result
                     searchResult?.let { user ->
                         Card(
                             modifier = Modifier.fillMaxWidth(),
@@ -208,20 +235,44 @@ fun FriendsScreen(
                             }
                         }
                     }
+
+                    // Show message if no user found
+                    if (!isLoading && searchEmail.isNotBlank() && searchResult == null) {
+                        Text(
+                            text = "No user found with this email",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
                         searchResult?.let { user ->
+                            isAddingFriend = true
                             friendsViewModel.addFriend(user.uid)
+                            // Close dialog after adding
                             showAddFriendDialog = false
                             searchEmail = ""
+                            isAddingFriend = false
                         }
                     },
-                    enabled = searchResult != null
+                    enabled = searchResult != null && !isAddingFriend && !isLoading
                 ) {
-                    Text("Add Friend")
+                    if (isAddingFriend) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Adding...")
+                        }
+                    } else {
+                        Text("Add Friend")
+                    }
                 }
             },
             dismissButton = {
@@ -230,7 +281,9 @@ fun FriendsScreen(
                         showAddFriendDialog = false
                         friendsViewModel.clearSearchResult()
                         searchEmail = ""
-                    }
+                        isAddingFriend = false
+                    },
+                    enabled = !isAddingFriend
                 ) {
                     Text("Cancel")
                 }

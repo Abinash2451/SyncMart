@@ -1,4 +1,3 @@
-// MainActivity.kt (rename from NewMainActivity.kt)
 package com.mana.SyncMart
 
 import android.os.Bundle

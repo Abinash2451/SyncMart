@@ -1,6 +1,8 @@
 package com.mana.SyncMart.viewmodel
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.firestore.ListenerRegistration
 import com.mana.SyncMart.data.model.Item
 import com.mana.SyncMart.data.model.ShoppingList
 import com.mana.SyncMart.data.repository.FirestoreRepository
@@ -11,6 +13,7 @@ import kotlinx.coroutines.launch
 class ShoppingListViewModel(
     private val repository: FirestoreRepository = FirestoreRepository()
 ) : ViewModel() {
+
     private val _shoppingLists = MutableStateFlow<List<ShoppingList>>(emptyList())
     val shoppingLists: StateFlow<List<ShoppingList>> = _shoppingLists
 
@@ -23,11 +26,23 @@ class ShoppingListViewModel(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
-    /** Fetch lists for current logged-in user */
+    // Success message state for user feedback
+    private val _successMessage = MutableStateFlow<String?>(null)
+    val successMessage: StateFlow<String?> = _successMessage
+
+    // Store listeners for cleanup
+    private var listsListener: ListenerRegistration? = null
+    private var itemsListener: ListenerRegistration? = null
+
+    /** ✅ FIXED: Fetch user's shopping lists with real-time updates */
     fun fetchUserLists() {
         _isLoading.value = true
         _errorMessage.value = null
-        repository.getUserLists(
+
+        // Clean up existing listener
+        listsListener?.remove()
+
+        listsListener = repository.getUserLists(
             onSuccess = { lists ->
                 _shoppingLists.value = lists
                 _isLoading.value = false
@@ -39,14 +54,18 @@ class ShoppingListViewModel(
         )
     }
 
-    /** Fetch items inside a given list */
+    /** ✅ FIXED: Fetch items for a specific list with real-time updates */
     fun fetchItems(listId: String) {
         _isLoading.value = true
         _errorMessage.value = null
-        repository.getItems(
+
+        // Clean up existing listener
+        itemsListener?.remove()
+
+        itemsListener = repository.getItems(
             listId = listId,
-            onSuccess = { fetchedItems ->
-                _items.value = fetchedItems
+            onSuccess = { items ->
+                _items.value = items
                 _isLoading.value = false
             },
             onError = { error ->
@@ -56,15 +75,22 @@ class ShoppingListViewModel(
         )
     }
 
-    /** Add new shopping list */
+    /** ✅ Add new shopping list */
     fun addShoppingList(name: String) {
-        if (name.isBlank()) return
+        if (name.isBlank()) {
+            _errorMessage.value = "List name cannot be empty"
+            return
+        }
+
         _isLoading.value = true
         _errorMessage.value = null
+
         repository.addShoppingList(
             name = name,
             onSuccess = {
-                fetchUserLists() // refresh after adding
+                _isLoading.value = false
+                _errorMessage.value = null
+                // No need to manually refresh - real-time listener will handle it
             },
             onError = { error ->
                 _errorMessage.value = error
@@ -73,59 +99,83 @@ class ShoppingListViewModel(
         )
     }
 
-    /** Update shopping list name */
+    /** ✅ Update shopping list name */
     fun updateShoppingListName(listId: String, newName: String) {
-        if (newName.isBlank()) return
+        if (newName.isBlank()) {
+            _errorMessage.value = "List name cannot be empty"
+            return
+        }
+
+        _isLoading.value = true
         _errorMessage.value = null
+
         repository.updateShoppingListName(
             listId = listId,
             newName = newName,
             onSuccess = {
-                fetchUserLists() // refresh after updating
+                _isLoading.value = false
+                _errorMessage.value = null
+                // Real-time listener will update the UI automatically
             },
             onError = { error ->
                 _errorMessage.value = error
+                _isLoading.value = false
             }
         )
     }
 
-    /** Delete shopping list */
+    /** ✅ Delete shopping list */
     fun deleteShoppingList(listId: String) {
+        _isLoading.value = true
         _errorMessage.value = null
+
         repository.deleteShoppingList(
             listId = listId,
             onSuccess = {
-                fetchUserLists() // refresh after deleting
+                _isLoading.value = false
+                _errorMessage.value = null
+                // Real-time listener will update the UI automatically
             },
             onError = { error ->
                 _errorMessage.value = error
+                _isLoading.value = false
             }
         )
     }
 
-    /** Add item to shopping list */
+    /** ✅ FIXED: Add item to shopping list */
     fun addItem(listId: String, item: Item) {
+        if (item.name.isBlank()) {
+            _errorMessage.value = "Item name cannot be empty"
+            return
+        }
+
+        _isLoading.value = true
         _errorMessage.value = null
+
         repository.addItem(
             listId = listId,
             item = item,
             onSuccess = {
-                fetchItems(listId) // refresh items after adding
+                _isLoading.value = false
+                _errorMessage.value = null
+                // Real-time listener will update items automatically
             },
             onError = { error ->
                 _errorMessage.value = error
+                _isLoading.value = false
             }
         )
     }
 
-    /** Update item (e.g., mark as purchased) */
+    /** ✅ FIXED: Update item */
     fun updateItem(listId: String, item: Item) {
-        _errorMessage.value = null
         repository.updateItem(
             listId = listId,
             item = item,
             onSuccess = {
-                fetchItems(listId) // refresh items after updating
+                _errorMessage.value = null
+                // Real-time listener will update items automatically
             },
             onError = { error ->
                 _errorMessage.value = error
@@ -133,40 +183,74 @@ class ShoppingListViewModel(
         )
     }
 
-    /** Delete item from shopping list */
+    /** ✅ FIXED: Delete item */
     fun deleteItem(listId: String, itemId: String) {
+        _isLoading.value = true
         _errorMessage.value = null
+
         repository.deleteItem(
             listId = listId,
             itemId = itemId,
             onSuccess = {
-                fetchItems(listId) // refresh items after deleting
+                _isLoading.value = false
+                _errorMessage.value = null
+                // Real-time listener will update items automatically
             },
             onError = { error ->
                 _errorMessage.value = error
+                _isLoading.value = false
             }
         )
     }
 
-    /** Share list with another user */
-    fun shareList(listId: String, userEmail: String) {
-        if (userEmail.isBlank()) return
+    /** ✅ Share list with friend by email */
+    fun shareList(listId: String, friendEmail: String) {
+        if (friendEmail.isBlank()) {
+            _errorMessage.value = "Friend email cannot be empty"
+            return
+        }
+
+        _isLoading.value = true
         _errorMessage.value = null
+
         repository.shareList(
             listId = listId,
-            userEmail = userEmail,
+            userEmail = friendEmail,
             onSuccess = {
-                // Could show success message or refresh data
-                fetchUserLists()
+                _isLoading.value = false
+                _errorMessage.value = null
+                // Show success message
+                _successMessage.value = "List shared successfully with $friendEmail"
+                // Real-time listener will update lists automatically
             },
             onError = { error ->
                 _errorMessage.value = error
+                _isLoading.value = false
             }
         )
     }
 
-    /** Clear error message */
+    /** ✅ Clear error message */
     fun clearError() {
         _errorMessage.value = null
+    }
+
+    /** ✅ Clear success message */
+    fun clearSuccess() {
+        _successMessage.value = null
+    }
+
+    /** ✅ FIXED: Clear items and cleanup listener when navigating away */
+    fun clearItems() {
+        _items.value = emptyList()
+        itemsListener?.remove()
+        itemsListener = null
+    }
+
+    /** ✅ FIXED: Cleanup listeners when ViewModel is cleared */
+    override fun onCleared() {
+        super.onCleared()
+        listsListener?.remove()
+        itemsListener?.remove()
     }
 }
