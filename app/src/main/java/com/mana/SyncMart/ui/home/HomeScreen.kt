@@ -1,10 +1,11 @@
 package com.mana.SyncMart.ui.home
-
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material3.*
@@ -28,8 +29,13 @@ fun HomeScreen(
     val shoppingLists by shoppingListViewModel.shoppingLists.collectAsState()
     val isLoading by shoppingListViewModel.isLoading.collectAsState()
     val errorMessage by shoppingListViewModel.errorMessage.collectAsState()
-
     var newListName by remember { mutableStateOf("") }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var editingListId by remember { mutableStateOf("") }
+    var editingListName by remember { mutableStateOf("") }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var deletingListId by remember { mutableStateOf("") }
+    var deletingListName by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         shoppingListViewModel.fetchUserLists()
@@ -68,9 +74,7 @@ fun HomeScreen(
                 label = { Text("New List Name") },
                 modifier = Modifier.fillMaxWidth()
             )
-
             Spacer(modifier = Modifier.height(8.dp))
-
             Button(
                 onClick = {
                     if (newListName.isNotBlank()) {
@@ -83,7 +87,6 @@ fun HomeScreen(
             ) {
                 Text("Add List")
             }
-
             Spacer(modifier = Modifier.height(16.dp))
 
             // Loading indicator
@@ -147,34 +150,159 @@ fun HomeScreen(
                             Column(
                                 modifier = Modifier.padding(16.dp)
                             ) {
-                                Text(
-                                    text = list.name,
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        text = if (list.sharedWith.isNotEmpty())
-                                            "Shared with ${list.sharedWith.size} people"
-                                        else "Private list",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.outline
-                                    )
+                                    Column(
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text(
+                                            text = list.name,
+                                            style = MaterialTheme.typography.titleMedium
+                                        )
+                                        Text(
+                                            text = if (list.sharedWith.isNotEmpty())
+                                                "Shared with ${list.sharedWith.size} people"
+                                            else "Private list",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.outline
+                                        )
+                                    }
 
-                                    Text(
-                                        text = "Tap to view →",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
+                                    Row {
+                                        // Edit button
+                                        IconButton(
+                                            onClick = {
+                                                editingListId = list.id
+                                                editingListName = list.name
+                                                showEditDialog = true
+                                            }
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Edit,
+                                                contentDescription = "Edit List",
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+
+                                        // Delete button
+                                        IconButton(
+                                            onClick = {
+                                                deletingListId = list.id
+                                                deletingListName = list.name
+                                                showDeleteDialog = true
+                                            }
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Delete,
+                                                contentDescription = "Delete List",
+                                                tint = MaterialTheme.colorScheme.error
+                                            )
+                                        }
+                                    }
                                 }
+
+                                Spacer(modifier = Modifier.height(4.dp))
+
+                                Text(
+                                    text = "Tap to view →",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
                             }
                         }
                     }
                 }
             }
         }
+    }
+
+    // Edit List Dialog
+    if (showEditDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showEditDialog = false
+                editingListName = ""
+                editingListId = ""
+            },
+            title = { Text("Edit List Name") },
+            text = {
+                OutlinedTextField(
+                    value = editingListName,
+                    onValueChange = { editingListName = it },
+                    label = { Text("List Name") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (editingListName.isNotBlank()) {
+                            shoppingListViewModel.updateShoppingListName(editingListId, editingListName)
+                            showEditDialog = false
+                            editingListName = ""
+                            editingListId = ""
+                        }
+                    },
+                    enabled = editingListName.isNotBlank()
+                ) {
+                    Text("Update")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showEditDialog = false
+                        editingListName = ""
+                        editingListId = ""
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Delete Confirmation Dialog
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showDeleteDialog = false
+                deletingListId = ""
+                deletingListName = ""
+            },
+            title = { Text("Delete List") },
+            text = {
+                Text("Are you sure you want to delete \"$deletingListName\"? This action cannot be undone.")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        shoppingListViewModel.deleteShoppingList(deletingListId)
+                        showDeleteDialog = false
+                        deletingListId = ""
+                        deletingListName = ""
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        deletingListId = ""
+                        deletingListName = ""
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }

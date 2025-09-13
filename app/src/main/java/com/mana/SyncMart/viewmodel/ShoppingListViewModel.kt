@@ -1,5 +1,4 @@
 package com.mana.SyncMart.viewmodel
-
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mana.SyncMart.data.model.Item
@@ -12,7 +11,6 @@ import kotlinx.coroutines.launch
 class ShoppingListViewModel(
     private val repository: FirestoreRepository = FirestoreRepository()
 ) : ViewModel() {
-
     private val _shoppingLists = MutableStateFlow<List<ShoppingList>>(emptyList())
     val shoppingLists: StateFlow<List<ShoppingList>> = _shoppingLists
 
@@ -25,11 +23,10 @@ class ShoppingListViewModel(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
-    /** 🔹 Fetch lists for current logged-in user */
+    /** Fetch lists for current logged-in user */
     fun fetchUserLists() {
         _isLoading.value = true
         _errorMessage.value = null
-
         repository.getUserLists(
             onSuccess = { lists ->
                 _shoppingLists.value = lists
@@ -42,11 +39,10 @@ class ShoppingListViewModel(
         )
     }
 
-    /** 🔹 Fetch items inside a given list */
+    /** Fetch items inside a given list */
     fun fetchItems(listId: String) {
         _isLoading.value = true
         _errorMessage.value = null
-
         repository.getItems(
             listId = listId,
             onSuccess = { fetchedItems ->
@@ -60,13 +56,11 @@ class ShoppingListViewModel(
         )
     }
 
-    /** 🔹 Add new shopping list */
+    /** Add new shopping list */
     fun addShoppingList(name: String) {
         if (name.isBlank()) return
-
         _isLoading.value = true
         _errorMessage.value = null
-
         repository.addShoppingList(
             name = name,
             onSuccess = {
@@ -79,10 +73,39 @@ class ShoppingListViewModel(
         )
     }
 
-    /** 🔹 Add item to shopping list */
+    /** Update shopping list name */
+    fun updateShoppingListName(listId: String, newName: String) {
+        if (newName.isBlank()) return
+        _errorMessage.value = null
+        repository.updateShoppingListName(
+            listId = listId,
+            newName = newName,
+            onSuccess = {
+                fetchUserLists() // refresh after updating
+            },
+            onError = { error ->
+                _errorMessage.value = error
+            }
+        )
+    }
+
+    /** Delete shopping list */
+    fun deleteShoppingList(listId: String) {
+        _errorMessage.value = null
+        repository.deleteShoppingList(
+            listId = listId,
+            onSuccess = {
+                fetchUserLists() // refresh after deleting
+            },
+            onError = { error ->
+                _errorMessage.value = error
+            }
+        )
+    }
+
+    /** Add item to shopping list */
     fun addItem(listId: String, item: Item) {
         _errorMessage.value = null
-
         repository.addItem(
             listId = listId,
             item = item,
@@ -95,10 +118,9 @@ class ShoppingListViewModel(
         )
     }
 
-    /** 🔹 Update item (e.g., mark as purchased) */
+    /** Update item (e.g., mark as purchased) */
     fun updateItem(listId: String, item: Item) {
         _errorMessage.value = null
-
         repository.updateItem(
             listId = listId,
             item = item,
@@ -111,10 +133,9 @@ class ShoppingListViewModel(
         )
     }
 
-    /** 🔹 Delete item from shopping list */
+    /** Delete item from shopping list */
     fun deleteItem(listId: String, itemId: String) {
         _errorMessage.value = null
-
         repository.deleteItem(
             listId = listId,
             itemId = itemId,
@@ -127,12 +148,10 @@ class ShoppingListViewModel(
         )
     }
 
-    /** 🔹 Share list with another user */
+    /** Share list with another user */
     fun shareList(listId: String, userEmail: String) {
         if (userEmail.isBlank()) return
-
         _errorMessage.value = null
-
         repository.shareList(
             listId = listId,
             userEmail = userEmail,
@@ -146,7 +165,7 @@ class ShoppingListViewModel(
         )
     }
 
-    /** 🔹 Clear error message */
+    /** Clear error message */
     fun clearError() {
         _errorMessage.value = null
     }

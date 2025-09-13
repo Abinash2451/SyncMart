@@ -1,5 +1,4 @@
 package com.mana.SyncMart.ui.home
-
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mana.SyncMart.data.model.Item
@@ -27,22 +27,36 @@ fun ListDetailScreen(
     shoppingListViewModel: ShoppingListViewModel = viewModel()
 ) {
     val items by shoppingListViewModel.items.collectAsState()
+    val shoppingLists by shoppingListViewModel.shoppingLists.collectAsState()
     val isLoading by shoppingListViewModel.isLoading.collectAsState()
     val errorMessage by shoppingListViewModel.errorMessage.collectAsState()
-
     var newItemName by remember { mutableStateOf("") }
     var newItemQuantity by remember { mutableStateOf("1") }
     var showAddItemDialog by remember { mutableStateOf(false) }
     var showShareDialog by remember { mutableStateOf(false) }
 
+    // Get the current list name
+    val currentList = shoppingLists.find { it.id == listId }
+    val listName = currentList?.name ?: "Shopping List"
+
     LaunchedEffect(listId) {
         shoppingListViewModel.fetchItems(listId)
+        // Also fetch lists to get the current list name if not already loaded
+        if (shoppingLists.isEmpty()) {
+            shoppingListViewModel.fetchUserLists()
+        }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Shopping List") },
+                title = {
+                    Text(
+                        text = listName,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -149,9 +163,7 @@ fun ListDetailScreen(
                         label = { Text("Item Name") },
                         modifier = Modifier.fillMaxWidth()
                     )
-
                     Spacer(modifier = Modifier.height(8.dp))
-
                     OutlinedTextField(
                         value = newItemQuantity,
                         onValueChange = { newItemQuantity = it },
@@ -198,7 +210,6 @@ fun ListDetailScreen(
     // Share List Dialog
     if (showShareDialog) {
         var shareEmail by remember { mutableStateOf("") }
-
         AlertDialog(
             onDismissRequest = {
                 showShareDialog = false
@@ -268,14 +279,13 @@ private fun ItemCard(
                     checked = item.purchased,
                     onCheckedChange = { onTogglePurchased() }
                 )
-
                 Spacer(modifier = Modifier.width(8.dp))
-
                 Column {
                     Text(
                         text = item.name,
                         style = MaterialTheme.typography.titleMedium,
-                        textDecoration = if (item.purchased) TextDecoration.LineThrough else TextDecoration.None
+                        textDecoration = if (item.purchased) TextDecoration.LineThrough else
+                            TextDecoration.None
                     )
                     Text(
                         text = "Quantity: ${item.quantity}",
@@ -284,7 +294,6 @@ private fun ItemCard(
                     )
                 }
             }
-
             IconButton(onClick = onDeleteItem) {
                 Icon(
                     Icons.Default.Delete,
