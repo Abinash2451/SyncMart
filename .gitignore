@@ -29,27 +29,16 @@ local.properties
 # IntelliJ/Android Studio files
 *.iml
 .idea/
-*.iws
 *.ipr
+*.iws
 
-# Misc
-.DS_Store
-*.log
-captures/
-.externalNativeBuild/
+# Firebase/Google Services (keep secret)
+google-services.json
 
-# Kotlin specific
-*.kotlin_module
+# Crashlytics/Performance files
+fabric.properties
 
-# Compose previews
-.build/
-
-# Jetpack Compose build caches
-caches/
-
-# Lint reports
-lint-report.xml
-lint-results.xml
-
-# Other
-.navigation/
+# Archive/compressed files
+*.zip
+*.rar
+*.7z
