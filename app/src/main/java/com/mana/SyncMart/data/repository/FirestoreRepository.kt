@@ -17,21 +17,86 @@ class FirestoreRepository(
     // Helper function to get current user ID
     private fun getCurrentUserId(): String? = auth.currentUser?.uid
 
-    /** ✅ Create user document in Firestore */
+    /** ✅ Create or update user document in Firestore */
+    suspend fun createOrUpdateUserDocument(user: User): Result<Unit> {
+        return try {
+            val userDoc = db.collection("users").document(user.uid)
+            val existingDoc = userDoc.get().await()
+
+            val userData = if (existingDoc.exists()) {
+                // Update existing user (preserve friends list)
+                val existingFriends = existingDoc.get("friends") as? List<String> ?: emptyList()
+                mapOf(
+                    "uid" to user.uid,
+                    "name" to user.name,
+                    "email" to user.email,
+                    "displayName" to user.displayName,
+                    "profilePicture" to user.profilePicture,
+                    "isEmailVerified" to user.isEmailVerified,
+                    "signInProvider" to user.signInProvider,
+                    "friends" to existingFriends, // Preserve existing friends
+                    "lastUpdated" to FieldValue.serverTimestamp()
+                )
+            } else {
+                // Create new user
+                mapOf(
+                    "uid" to user.uid,
+                    "name" to user.name,
+                    "email" to user.email,
+                    "displayName" to user.displayName,
+                    "profilePicture" to user.profilePicture,
+                    "isEmailVerified" to user.isEmailVerified,
+                    "signInProvider" to user.signInProvider,
+                    "friends" to emptyList<String>(),
+                    "createdAt" to FieldValue.serverTimestamp(),
+                    "lastUpdated" to FieldValue.serverTimestamp()
+                )
+            }
+
+            userDoc.set(userData).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /** ✅ DEPRECATED: Keep for backward compatibility */
     suspend fun createUserDocument(user: User): Result<Unit> {
+        return createOrUpdateUserDocument(user)
+    }
+
+    /** ✅ Update user display name */
+    suspend fun updateUserDisplayName(userId: String, newDisplayName: String): Result<Unit> {
         return try {
             db.collection("users")
-                .document(user.uid)
-                .set(
+                .document(userId)
+                .update(
                     mapOf(
-                        "uid" to user.uid,
-                        "name" to user.name,
-                        "email" to user.email,
-                        "friends" to emptyList<String>()
+                        "displayName" to newDisplayName,
+                        "lastUpdated" to FieldValue.serverTimestamp()
                     )
                 )
                 .await()
             Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /** ✅ Get user document */
+    suspend fun getUserDocument(userId: String): Result<User?> {
+        return try {
+            val document = db.collection("users")
+                .document(userId)
+                .get()
+                .await()
+
+            if (document.exists()) {
+                val user = document.toObject(User::class.java)
+                Result.success(user)
+            } else {
+                Result.success(null)
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }

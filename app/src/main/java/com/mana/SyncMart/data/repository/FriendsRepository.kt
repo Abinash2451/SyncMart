@@ -109,7 +109,7 @@ class FriendsRepository(
     }
 
     /**
-     * FIXED: Improved search with better error handling and retry logic
+     * FIXED: Improved search with better error handling and display name support
      */
     fun searchUserByEmail(
         email: String,

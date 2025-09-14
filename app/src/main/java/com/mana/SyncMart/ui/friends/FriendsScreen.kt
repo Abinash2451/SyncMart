@@ -1,16 +1,15 @@
 package com.mana.SyncMart.ui.friends
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mana.SyncMart.viewmodel.FriendsViewModel
@@ -38,6 +37,11 @@ fun FriendsScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Friends") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
                 actions = {
                     IconButton(onClick = { showAddFriendDialog = true }) {
                         Icon(Icons.Default.Add, contentDescription = "Add Friend")
@@ -130,17 +134,82 @@ fun FriendsScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column {
-                                    Text(
-                                        text = friend.name,
-                                        style = MaterialTheme.typography.titleMedium
-                                    )
-                                    Text(
-                                        text = friend.email,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.outline
-                                    )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    // Profile picture placeholder
+                                    Card(
+                                        modifier = Modifier.size(40.dp),
+                                        shape = androidx.compose.foundation.shape.CircleShape,
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                                        )
+                                    ) {
+                                        Box(
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = (friend.displayName.takeIf { it.isNotBlank() }
+                                                    ?: friend.name.takeIf { it.isNotBlank() }
+                                                    ?: friend.email.substringBefore("@"))
+                                                    .first().uppercase(),
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.width(12.dp))
+
+                                    Column {
+                                        // Display name (primary)
+                                        Text(
+                                            text = friend.displayName.takeIf { it.isNotBlank() }
+                                                ?: friend.name.takeIf { it.isNotBlank() }
+                                                ?: friend.email.substringBefore("@"),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Medium
+                                        )
+
+                                        // Email (secondary)
+                                        Text(
+                                            text = friend.email,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.outline
+                                        )
+
+                                        // Show sign-in method if relevant
+                                        if (friend.signInProvider.isNotBlank()) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    when (friend.signInProvider) {
+                                                        "google" -> Icons.Default.Email
+                                                        else -> Icons.Default.Person
+                                                    },
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(12.dp),
+                                                    tint = MaterialTheme.colorScheme.outline
+                                                )
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text(
+                                                    text = when (friend.signInProvider) {
+                                                        "google" -> "Google user"
+                                                        "email" -> "Email user"
+                                                        else -> ""
+                                                    },
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.outline
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
+
                                 IconButton(
                                     onClick = { friendsViewModel.removeFriend(friend.uid) }
                                 ) {
@@ -170,6 +239,13 @@ fun FriendsScreen(
             title = { Text("Add Friend") },
             text = {
                 Column {
+                    Text(
+                        text = "Search for friends by their email address",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+
                     OutlinedTextField(
                         value = searchEmail,
                         onValueChange = { newEmail ->
@@ -223,15 +299,50 @@ fun FriendsScreen(
                                 containerColor = MaterialTheme.colorScheme.primaryContainer
                             )
                         ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Text(
-                                    text = "Found: ${user.name}",
-                                    style = MaterialTheme.typography.titleSmall
-                                )
-                                Text(
-                                    text = user.email,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Profile picture
+                                Card(
+                                    modifier = Modifier.size(32.dp),
+                                    shape = androidx.compose.foundation.shape.CircleShape,
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.primary
+                                    )
+                                ) {
+                                    Box(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = (user.displayName.takeIf { it.isNotBlank() }
+                                                ?: user.name.takeIf { it.isNotBlank() }
+                                                ?: user.email.substringBefore("@"))
+                                                .first().uppercase(),
+                                            style = MaterialTheme.typography.labelLarge,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onPrimary
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.width(12.dp))
+
+                                Column {
+                                    Text(
+                                        text = "Found: ${user.displayName.takeIf { it.isNotBlank() }
+                                            ?: user.name.takeIf { it.isNotBlank() }
+                                            ?: user.email.substringBefore("@")}",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                    Text(
+                                        text = user.email,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                }
                             }
                         }
                     }

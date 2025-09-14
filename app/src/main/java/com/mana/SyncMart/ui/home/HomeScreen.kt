@@ -26,6 +26,7 @@ import com.mana.SyncMart.viewmodel.FriendsViewModel
 fun HomeScreen(
     onNavigateToListDetail: (String) -> Unit = {},
     onNavigateToFriends: () -> Unit = {},
+    onNavigateToProfile: () -> Unit = {},
     onLogout: () -> Unit = {},
     shoppingListViewModel: ShoppingListViewModel = viewModel(),
     authViewModel: AuthViewModel = viewModel(),
@@ -86,6 +87,9 @@ fun HomeScreen(
             TopAppBar(
                 title = { Text("My Shopping Lists") },
                 actions = {
+                    IconButton(onClick = onNavigateToProfile) {
+                        Icon(Icons.Default.Person, contentDescription = "Profile")
+                    }
                     IconButton(onClick = onNavigateToFriends) {
                         Icon(Icons.Default.People, contentDescription = "Friends")
                     }

@@ -9,6 +9,7 @@ import com.mana.SyncMart.ui.theme.SyncMartTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContent {
             SyncMartTheme {
                 SyncMartApp()

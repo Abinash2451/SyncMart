@@ -14,6 +14,7 @@ import com.mana.SyncMart.ui.home.HomeScreen
 import com.mana.SyncMart.ui.home.ListDetailScreen
 import com.mana.SyncMart.ui.friends.FriendsScreen
 import com.mana.SyncMart.ui.friends.SharedListScreen
+import com.mana.SyncMart.ui.profile.ProfileScreen
 import com.mana.SyncMart.viewmodel.AuthViewModel
 
 @Composable
@@ -70,6 +71,9 @@ fun SyncMartApp() {
                 onNavigateToFriends = {
                     navController.navigate("friends")
                 },
+                onNavigateToProfile = {
+                    navController.navigate("profile")
+                },
                 onLogout = {
                     navController.navigate("login") {
                         popUpTo(0) { inclusive = true }
@@ -103,6 +107,19 @@ fun SyncMartApp() {
         composable("sharedLists") {
             SharedListScreen(
                 onBack = { navController.popBackStack() }
+            )
+        }
+
+        // 👤 Profile Route
+        composable("profile") {
+            ProfileScreen(
+                onBack = { navController.popBackStack() },
+                onLogout = {
+                    navController.navigate("login") {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
+                authViewModel = authViewModel
             )
         }
     }
