@@ -91,7 +91,20 @@ class FirestoreRepository(
                 querySnapshot?.let { snapshot ->
                     val items = snapshot.documents.mapNotNull { document ->
                         try {
-                            document.toObject(Item::class.java)?.copy(id = document.id)
+                            // Handle both old (Int) and new (String) quantity format
+                            val data = document.data
+                            val quantity = when (val qty = data?.get("quantity")) {
+                                is String -> qty
+                                is Number -> qty.toString()
+                                else -> "1"
+                            }
+
+                            Item(
+                                id = document.id,
+                                name = data?.get("name") as? String ?: "",
+                                quantity = quantity,
+                                purchased = data?.get("purchased") as? Boolean ?: false
+                            )
                         } catch (e: Exception) {
                             null
                         }
@@ -189,7 +202,7 @@ class FirestoreRepository(
             }
     }
 
-    /** ✅ FIXED: Add item to shopping list with timestamp */
+    /** ✅ FIXED: Add item to shopping list with timestamp - Updated for string quantity */
     fun addItem(
         listId: String,
         item: Item,
@@ -198,7 +211,7 @@ class FirestoreRepository(
     ) {
         val itemData = mapOf(
             "name" to item.name,
-            "quantity" to item.quantity,
+            "quantity" to item.quantity, // Now stores as string
             "purchased" to item.purchased,
             "createdAt" to FieldValue.serverTimestamp(),
             "lastModified" to FieldValue.serverTimestamp()
@@ -225,7 +238,7 @@ class FirestoreRepository(
             }
     }
 
-    /** ✅ FIXED: Update item with timestamp */
+    /** ✅ FIXED: Update item with timestamp - Updated for string quantity */
     fun updateItem(
         listId: String,
         item: Item,
@@ -234,7 +247,7 @@ class FirestoreRepository(
     ) {
         val itemData = mapOf(
             "name" to item.name,
-            "quantity" to item.quantity,
+            "quantity" to item.quantity, // Now stores as string
             "purchased" to item.purchased,
             "lastModified" to FieldValue.serverTimestamp()
         )

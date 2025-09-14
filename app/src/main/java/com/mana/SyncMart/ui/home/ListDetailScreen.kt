@@ -29,14 +29,28 @@ fun ListDetailScreen(
     val shoppingLists by shoppingListViewModel.shoppingLists.collectAsState()
     val isLoading by shoppingListViewModel.isLoading.collectAsState()
     val errorMessage by shoppingListViewModel.errorMessage.collectAsState()
+
     var newItemName by remember { mutableStateOf("") }
     var newItemQuantity by remember { mutableStateOf("1") }
     var showAddItemDialog by remember { mutableStateOf(false) }
+
+    // Edit item states
+    var showEditItemDialog by remember { mutableStateOf(false) }
+    var editingItem by remember { mutableStateOf<Item?>(null) }
+    var editItemName by remember { mutableStateOf("") }
+    var editItemQuantity by remember { mutableStateOf("") }
 
     // Get the current list name and details
     val currentList = shoppingLists.find { it.id == listId }
     val listName = currentList?.name ?: "Shopping List"
     val currentUserId = authViewModel.getCurrentUserId()
+
+    // Fetch list details when component mounts to get the correct name
+    LaunchedEffect(listId) {
+        if (currentList == null) {
+            shoppingListViewModel.fetchUserLists()
+        }
+    }
 
     // Fetch items when listId changes
     LaunchedEffect(listId) {
@@ -67,6 +81,7 @@ fun ListDetailScreen(
                                 list.sharedWith.isNotEmpty() -> "Syncing with ${list.sharedWith.size} people"
                                 else -> null
                             }
+
                             statusText?.let {
                                 Text(
                                     text = it,
@@ -122,11 +137,13 @@ fun ListDetailScreen(
                                 } else {
                                     "This list is shared with ${list.sharedWith.size} people"
                                 }
+
                                 Text(
                                     text = mainText,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
+
                                 if (list.ownerId != currentUserId) {
                                     Text(
                                         text = "Any changes you make will be visible to all users instantly",
@@ -205,6 +222,12 @@ fun ListDetailScreen(
                                     item.copy(purchased = !item.purchased)
                                 )
                             },
+                            onEditItem = {
+                                editingItem = item
+                                editItemName = item.name
+                                editItemQuantity = item.quantity
+                                showEditItemDialog = true
+                            },
                             onDeleteItem = {
                                 shoppingListViewModel.deleteItem(listId, item.id)
                             }
@@ -232,11 +255,14 @@ fun ListDetailScreen(
                         label = { Text("Item Name") },
                         modifier = Modifier.fillMaxWidth()
                     )
+
                     Spacer(modifier = Modifier.height(8.dp))
+
                     OutlinedTextField(
                         value = newItemQuantity,
                         onValueChange = { newItemQuantity = it },
                         label = { Text("Quantity") },
+                        placeholder = { Text("e.g., 2 kg, 1 liter, 5 pieces") },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -245,10 +271,9 @@ fun ListDetailScreen(
                 Button(
                     onClick = {
                         if (newItemName.isNotBlank()) {
-                            val quantity = newItemQuantity.toIntOrNull() ?: 1
                             val newItem = Item(
                                 name = newItemName,
-                                quantity = quantity,
+                                quantity = newItemQuantity.ifBlank { "1" },
                                 purchased = false
                             )
                             shoppingListViewModel.addItem(listId, newItem)
@@ -275,12 +300,78 @@ fun ListDetailScreen(
             }
         )
     }
+
+    // Edit Item Dialog
+    if (showEditItemDialog && editingItem != null) {
+        AlertDialog(
+            onDismissRequest = {
+                showEditItemDialog = false
+                editingItem = null
+                editItemName = ""
+                editItemQuantity = ""
+            },
+            title = { Text("Edit Item") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = editItemName,
+                        onValueChange = { editItemName = it },
+                        label = { Text("Item Name") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = editItemQuantity,
+                        onValueChange = { editItemQuantity = it },
+                        label = { Text("Quantity") },
+                        placeholder = { Text("e.g., 2 kg, 1 liter, 5 pieces") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (editItemName.isNotBlank() && editingItem != null) {
+                            val updatedItem = editingItem!!.copy(
+                                name = editItemName,
+                                quantity = editItemQuantity.ifBlank { "1" }
+                            )
+                            shoppingListViewModel.updateItem(listId, updatedItem)
+                            showEditItemDialog = false
+                            editingItem = null
+                            editItemName = ""
+                            editItemQuantity = ""
+                        }
+                    },
+                    enabled = editItemName.isNotBlank()
+                ) {
+                    Text("Update")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showEditItemDialog = false
+                        editingItem = null
+                        editItemName = ""
+                        editItemQuantity = ""
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 }
 
 @Composable
 private fun ItemCard(
     item: Item,
     onTogglePurchased: () -> Unit,
+    onEditItem: () -> Unit,
     onDeleteItem: () -> Unit
 ) {
     Card(
@@ -328,12 +419,25 @@ private fun ItemCard(
                     )
                 }
             }
-            IconButton(onClick = onDeleteItem) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = "Delete Item",
-                    tint = MaterialTheme.colorScheme.error
-                )
+
+            Row {
+                // Edit button
+                IconButton(onClick = onEditItem) {
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = "Edit Item",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                // Delete button
+                IconButton(onClick = onDeleteItem) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Delete Item",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         }
     }
